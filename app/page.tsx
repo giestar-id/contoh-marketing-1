@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { 
   ArrowRight, 
   Search, 
@@ -156,26 +157,45 @@ export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
 
-  // Handle navbar background on scroll
-  if (typeof window !== "undefined") {
-    window.onscroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
+  useEffect(() => {
+    if (sidebarRef.current) {
+      if (sidebarOpen) {
+        sidebarRef.current.removeAttribute("inert");
       } else {
-        setIsScrolled(false);
+        sidebarRef.current.setAttribute("inert", "");
       }
+    }
+  }, [sidebarOpen]);
+
+  // Handle navbar background on scroll (throttled with requestAnimationFrame)
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 50);
+        ticking = false;
+      });
     };
-  }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <div className="max-w-7xl mx-auto bg-white min-h-screen relative shadow-sm">
+    <>
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-white focus:text-brand-dark focus:px-5 focus:py-2.5 focus:rounded-full focus:font-semibold focus:shadow-lg">
+        Skip to main content
+      </a>
+      <main id="main" className="max-w-7xl mx-auto bg-white min-h-screen relative shadow-sm">
       {/* ─── MOBILE SIDEBAR DRAWER ─── */}
       <div 
         onClick={() => setSidebarOpen(false)} 
         className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
       />
-      <aside className={`fixed top-0 right-0 bottom-0 w-72 max-w-[80%] bg-brand-dark text-white z-[100] transition-transform duration-300 ease-out shadow-2xl p-6 flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside ref={sidebarRef} aria-hidden={!sidebarOpen} className={`fixed top-0 right-0 bottom-0 w-72 max-w-[80%] bg-brand-dark text-white z-[100] transition-transform duration-300 ease-out shadow-2xl p-6 flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div>
           <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800">
             <div className="flex items-center gap-2">
@@ -184,7 +204,7 @@ export default function Home() {
               </div>
               <span className="font-semibold text-lg tracking-tight">granger</span>
             </div>
-            <button onClick={() => setSidebarOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition">
+            <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition">
               <X className="w-5 h-5 text-white" />
             </button>
           </div>
@@ -261,13 +281,20 @@ export default function Home() {
       {/* ─── HERO SECTION (Restored Full Height min-h-screen) ─── */}
       <section className="relative bg-gray-900 rounded-b-[3rem] overflow-hidden px-6 pt-24 pb-16 md:px-12 md:pb-24 text-white min-h-[85vh] md:min-h-screen flex flex-col justify-between">
         {/* Full Brightness Background Image Layer */}
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop')" }}></div>
+        <Image
+          src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2070&auto=format&fit=crop"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
         
         {/* Dark Gradient Overlay (Matching navbar dark background gray-900 instead of blue) */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent via-40% to-gray-900/95"></div>
 
         {/* Hero Content (Shifted higher up with description on right side above Granger title) */}
-        <div className="relative z-10 mt-4 md:mt-8 mb-16 md:mb-24 flex flex-col md:flex-row justify-between items-start md:items-end w-full gap-6 flex-1">
+        <div className="relative z-10 mt-4 md:mt-8 mb-16 md:mb-24 flex flex-col md:flex-row justify-between items-start w-full gap-6 flex-1">
           <div className="max-w-xl lg:max-w-2xl">
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium leading-tight mb-4 tracking-tight drop-shadow-md text-white">
               A new species<br />of property living.
@@ -275,7 +302,7 @@ export default function Home() {
           </div>
 
           {/* Right Side Small Description (Bottom-right on mobile, right-aligned on desktop) */}
-          <div className="max-w-xs text-right text-white/80 z-20 mt-auto ml-auto md:mt-12">
+          <div className="max-w-xs text-right text-white/80 z-20 mt-auto ml-auto">
             <p className="text-xs sm:text-sm leading-relaxed text-gray-200 drop-shadow">
               Discover luxury architectural homes, smart villas, and exclusive property investments tailored for modern lifestyles.
             </p>
@@ -316,8 +343,8 @@ export default function Home() {
             
             {/* Search Input Simulation */}
             <div className="flex items-center justify-between bg-white rounded-full p-2 pl-6 shadow-sm border border-gray-100 mb-6">
-              <span className="text-gray-400 text-sm">Find Property or City...</span>
-              <button className="bg-brand-dark text-white p-3 rounded-full flex items-center justify-center">
+              <span className="text-gray-500 text-sm">Find Property or City...</span>
+              <button aria-label="Search" className="bg-brand-dark text-white p-3 rounded-full flex items-center justify-center">
                 <Search className="w-4 h-4" />
               </button>
             </div>
@@ -354,8 +381,14 @@ export default function Home() {
           </div>
 
           {/* Property Image Card */}
-          <div className="flex-1 relative">
-            <img src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=1780&auto=format&fit=crop" alt="Luxury Villa" className="w-full h-[400px] object-cover rounded-4xl shadow-md" />
+          <div className="flex-1 relative min-h-[400px]">
+            <Image
+              src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=1780&auto=format&fit=crop"
+              alt="Luxury villa exterior"
+              fill
+              sizes="(max-width: 1024px) 100vw, 45vw"
+              className="object-cover rounded-4xl shadow-md"
+            />
             
             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur rounded-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold shadow-sm">
               <span className="w-2 h-2 rounded-full bg-green-500"></span> Inspection Available
@@ -371,7 +404,7 @@ export default function Home() {
                 <span className="text-gray-400">-</span>
                 <span className="text-lg font-semibold text-gray-400">Open House</span>
               </div>
-              <button className="w-full bg-brand-blue text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-600 transition">
+              <button className="w-full bg-blue-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-blue-700 transition">
                 Book Inspection
               </button>
             </div>
@@ -397,12 +430,18 @@ export default function Home() {
         <div className="flex gap-5 overflow-x-auto snap-x snap-proximity scroll-smooth -mx-6 px-6 md:mx-0 md:px-0 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {products.map((p) => (
             <div key={p.name} className="bg-white rounded-4xl border border-gray-100 shadow-sm overflow-hidden shrink-0 snap-start w-[82%] sm:w-[46%] lg:w-[31%] group hover:shadow-xl transition-shadow duration-300">
-              <div className="relative overflow-hidden">
-                <img src={p.image} alt={p.name} className="w-full h-48 md:h-52 object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="relative overflow-hidden h-48 md:h-52">
+                <Image
+                  src={p.image}
+                  alt={p.name}
+                  fill
+                  sizes="(max-width: 640px) 82vw, (max-width: 1024px) 46vw, 31vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
                 <span className="absolute top-3 left-3 bg-white/90 backdrop-blur rounded-full px-3 py-1 text-[11px] font-semibold flex items-center gap-1 shadow-sm">
                   <MapPin className="w-3 h-3 text-brand-orange" /> {p.city}
                 </span>
-                <span className="absolute top-3 right-3 bg-brand-orange text-white rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm">
+                <span className="absolute top-3 right-3 bg-brand-orange text-brand-dark rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm">
                   {p.type}
                 </span>
               </div>
@@ -420,14 +459,14 @@ export default function Home() {
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <div>
-                    <span className="text-[11px] text-gray-400 block">Starting at</span>
+                    <span className="text-[11px] text-gray-500 block">Starting at</span>
                     <span className="font-bold text-brand-dark">{p.price}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="w-9 h-9 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition text-gray-500">
+                    <button aria-label={`Save ${p.name} to favorites`} className="w-9 h-9 border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition text-gray-500">
                       <Heart className="w-4 h-4" />
                     </button>
-                    <button className="w-9 h-9 bg-brand-orange text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition">
+                    <button aria-label={`View ${p.name} details`} className="w-9 h-9 bg-brand-orange text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition">
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -453,7 +492,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4 text-sm">
             <p className="text-gray-500 text-right max-w-xs hidden md:block">You may not be guaranteed a good review, but our properties do.</p>
-            <button className="bg-gray-100 hover:bg-gray-200 p-3 rounded-full transition">
+            <button aria-label="Next" className="bg-gray-100 hover:bg-gray-200 p-3 rounded-full transition">
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -468,10 +507,10 @@ export default function Home() {
               <p className="font-medium text-brand-dark">Elevating<br />Living</p>
             </div>
             <div className="flex justify-between items-center mt-auto">
-              <button className="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-100">
+              <button aria-label="Previous" className="w-10 h-10 border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-100">
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <button className="w-10 h-10 bg-brand-orange text-white rounded-full flex items-center justify-center hover:bg-orange-600 shadow-md">
+              <button aria-label="Next" className="w-10 h-10 bg-brand-orange text-white rounded-full flex items-center justify-center hover:bg-orange-600 shadow-md">
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -500,7 +539,13 @@ export default function Home() {
 
           {/* Image Card */}
           <div className="rounded-4xl overflow-hidden relative aspect-square shadow-md shrink-0 snap-start w-[85%] sm:w-[46%] lg:w-[31.5%]">
-            <img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=2070&auto=format&fit=crop" alt="Property interior" className="w-full h-full object-cover" />
+            <Image
+              src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=2070&auto=format&fit=crop"
+              alt="Modern interior of a luxury residence"
+              fill
+              sizes="(max-width: 640px) 85vw, (max-width: 1024px) 46vw, 32vw"
+              className="object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-between p-6">
               <div className="flex justify-end w-full">
                 <div className="bg-white/90 backdrop-blur rounded-2xl p-3 shadow-lg flex items-center gap-3 w-40">
@@ -526,7 +571,13 @@ export default function Home() {
         <div className="bg-[#F0F5F9] rounded-[2.5rem] p-3 md:p-6 relative overflow-hidden h-auto min-h-[340px] md:min-h-0 md:h-[500px]">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-50 transform translate-x-1/3 -translate-y-1/3"></div>
           
-          <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop" alt="Modern Architecture" className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply rounded-[2.5rem]" />
+          <Image
+            src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop"
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            className="object-cover opacity-60 mix-blend-multiply rounded-[2.5rem]"
+          />
 
           {/* Chart UI Card Overlay */}
           <div className="relative md:absolute md:top-1/2 md:left-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2 bg-white/95 backdrop-blur-xl rounded-3xl p-4 md:p-6 shadow-2xl border border-white/50 w-full max-w-sm">
@@ -590,16 +641,16 @@ export default function Home() {
           </h2>
           
           <div className="flex gap-3 mb-10">
-            <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 shadow-sm text-brand-dark">
+            <button aria-label="Filter properties" className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 shadow-sm text-brand-dark">
               <Filter className="w-4 h-4" />
             </button>
-            <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-400">
+            <button aria-label="Favorites" className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-400">
               <Heart className="w-4 h-4" />
             </button>
-            <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-400">
+            <button aria-label="Quick match" className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-400">
               <Zap className="w-4 h-4" />
             </button>
-            <button className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center shadow-md text-white">
+            <button aria-label="Add property" className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center shadow-md text-white">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -610,17 +661,17 @@ export default function Home() {
               <a href="#" className="text-sm font-semibold text-brand-dark border-b border-brand-dark pb-0.5 hover:text-brand-orange hover:border-brand-orange transition">EXPLORE APP</a>
             </div>
             
-            <button className="w-14 h-14 bg-brand-orange text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 shrink-0 transform -translate-y-4">
+            <button aria-label="Explore app" className="w-14 h-14 bg-brand-orange text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 shrink-0 transform -translate-y-4">
               <ArrowRight className="w-6 h-6" />
             </button>
             
             <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 w-32 relative z-10 shrink-0">
-              <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1973&auto=format&fit=crop" alt="User" className="w-full h-20 object-cover rounded-xl" />
+              <Image src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1973&auto=format&fit=crop" alt="Estate expert preview" width={128} height={80} className="w-full h-20 object-cover rounded-xl" />
               <div className="absolute top-2 right-2 bg-white/90 rounded px-1.5 py-0.5 text-[10px] font-bold flex items-center gap-1 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-orange"></span> Live
               </div>
               <div className="text-center">
-                <div className="text-[10px] text-gray-400">Estate Expert</div>
+                <div className="text-[10px] text-gray-500">Estate Expert</div>
                 <div className="text-xs font-semibold flex items-center justify-center gap-1">
                   <span className="text-yellow-400">★</span> Read Post
                 </div>
@@ -654,12 +705,12 @@ export default function Home() {
                   >
                     <div className="flex justify-between items-center relative z-10">
                       <div>
-                        <h3 className="text-xl md:text-2xl font-semibold mb-4 text-white">{item.title}</h3>
+                        <h3 className="text-xl md:text-2xl font-semibold mb-4 text-brand-dark">{item.title}</h3>
                         <div className="flex flex-wrap gap-2">
                           {item.tags.map((t, idx) => {
                             const TagIcon = t.icon;
                             return (
-                              <span key={idx} className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium border border-white/20 text-white flex items-center gap-1">
+                              <span key={idx} className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium border border-white/30 text-brand-dark flex items-center gap-1">
                                 <TagIcon className="w-3 h-3" /> {t.label}
                               </span>
                             );
@@ -672,7 +723,7 @@ export default function Home() {
                     </div>
                     
                     <div className="absolute right-8 md:right-32 top-1/2 transform -translate-y-1/2 w-48 h-32 rounded-2xl overflow-hidden shadow-2xl hidden lg:block border-4 border-brand-orange rotate-3 hover:rotate-0 transition-transform">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                      <Image src={item.image} alt={item.title} fill sizes="192px" className="object-cover" />
                     </div>
                   </div>
                 );
@@ -712,10 +763,10 @@ export default function Home() {
               &quot;From the first viewing to the final handover, Granger handled everything with total precision. The valuation tool predicted the market perfectly.&quot;
             </p>
             <div className="flex -space-x-3">
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" alt="Client" className="w-full h-full object-cover" /></div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1970&auto=format&fit=crop" alt="Client" className="w-full h-full object-cover" /></div>
-              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1887&auto=format&fit=crop" alt="Client" className="w-full h-full object-cover" /></div>
-              <div className="w-10 h-10 rounded-full border-2 border-white bg-brand-orange text-white flex items-center justify-center text-[11px] font-bold">+2k</div>
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><Image src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" alt="Client photo" width={40} height={40} className="w-full h-full object-cover" /></div>
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><Image src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1970&auto=format&fit=crop" alt="Client photo" width={40} height={40} className="w-full h-full object-cover" /></div>
+              <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden"><Image src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1887&auto=format&fit=crop" alt="Client photo" width={40} height={40} className="w-full h-full object-cover" /></div>
+              <div className="w-10 h-10 rounded-full border-2 border-white bg-brand-orange text-brand-dark flex items-center justify-center text-[11px] font-bold">+2k</div>
             </div>
           </div>
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
@@ -772,7 +823,7 @@ export default function Home() {
                 <input type="text" placeholder="Your name" className="flex-1 bg-white/10 border border-white/15 rounded-full px-5 py-3 text-sm placeholder:text-gray-400 focus:outline-none focus:border-brand-orange transition" />
                 <input type="email" placeholder="Email address" className="flex-1 bg-white/10 border border-white/15 rounded-full px-5 py-3 text-sm placeholder:text-gray-400 focus:outline-none focus:border-brand-orange transition" />
               </div>
-              <button className="w-full bg-brand-orange text-white rounded-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-orange-600 transition shadow-lg">
+              <button className="w-full bg-brand-orange text-brand-dark rounded-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-orange-600 hover:text-white transition shadow-lg">
                 Send Message <Send className="w-4 h-4" />
               </button>
             </div>
@@ -802,7 +853,7 @@ export default function Home() {
           {/* Text Testimonial Card */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
-              <div className="text-sm text-gray-400 mb-6">Review</div>
+              <div className="text-sm text-gray-500 mb-6">Review</div>
               <p className="text-xl md:text-2xl font-medium leading-relaxed text-brand-dark mb-8">
                 &quot;The Granger property tracker keeps my investment portfolio on track, and the agent network makes buying seamless. It&apos;s the perfect mix of luxury and convenience.&quot;
               </p>
@@ -821,7 +872,7 @@ export default function Home() {
             <div className="flex justify-between items-center mt-12 pt-6 border-t border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" alt="User Avatar" className="w-full h-full object-cover" />
+                  <Image src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop" alt="User avatar" width={40} height={40} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <div className="font-semibold text-sm">Samantha Chen</div>
@@ -836,7 +887,13 @@ export default function Home() {
 
           {/* Video/Image Testimonial Card */}
           <div className="bg-gray-100 rounded-[2.5rem] relative overflow-hidden h-[400px]">
-            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1973&auto=format&fit=crop" alt="Luxury Residence" className="w-full h-full object-cover" />
+            <Image
+              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1973&auto=format&fit=crop"
+              alt="Luxury residence for VIP inspection"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
             
             <div className="absolute top-6 left-6 flex flex-col gap-2">
@@ -872,7 +929,13 @@ export default function Home() {
         <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
           
           <div className="w-32 h-32 rounded-[2rem] overflow-hidden relative shrink-0 shadow-md">
-            <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2069&auto=format&fit=crop" alt="City Skyline" className="w-full h-full object-cover opacity-80" />
+            <Image
+              src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2069&auto=format&fit=crop"
+              alt=""
+              fill
+              sizes="128px"
+              className="object-cover opacity-80"
+            />
             <div className="absolute inset-0 bg-red-900/40 mix-blend-multiply"></div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-2 text-center">
               <span className="text-xs font-semibold mb-1">Explore Map</span>
@@ -904,7 +967,7 @@ export default function Home() {
                 <div className="font-bold text-gray-800">4.9 ★</div>
               </div>
             </div>
-            <button className="w-14 h-14 bg-brand-orange text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 transition">
+            <button aria-label="Learn more" className="w-14 h-14 bg-brand-orange text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 transition">
               <ArrowUpRight className="w-6 h-6" />
             </button>
           </div>
@@ -925,9 +988,9 @@ export default function Home() {
         </div>
 
         <div className="w-full text-center relative border-b border-gray-200 pb-8 mb-8">
-          <span className="text-xs text-gray-400 absolute top-0 left-0 uppercase tracking-widest">Privacy Policy</span>
-          <span className="text-xs text-gray-400 absolute top-0 left-1/2 transform -translate-x-1/2 uppercase tracking-widest">2026 ©</span>
-          <span className="text-xs text-gray-400 absolute top-0 right-0 uppercase tracking-widest">Terms & Conditions</span>
+          <span className="text-xs text-gray-500 absolute top-0 left-0 uppercase tracking-widest">Privacy Policy</span>
+          <span className="text-xs text-gray-500 absolute top-0 left-1/2 transform -translate-x-1/2 uppercase tracking-widest">2026 ©</span>
+          <span className="text-xs text-gray-500 absolute top-0 right-0 uppercase tracking-widest">Terms & Conditions</span>
           
           <h1 className="text-[15vw] font-bold tracking-tighter leading-none text-brand-dark mt-10 select-none">
             Granger
@@ -942,6 +1005,7 @@ export default function Home() {
           <div>Designed by Maulan</div>
         </div>
       </footer>
-    </div>
+      </main>
+    </>
   );
 }
