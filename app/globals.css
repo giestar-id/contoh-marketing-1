@@ -5,6 +5,14 @@
 body {
     background-color: #F3F4F6; /* Light gray background matching the image edges */
 }
+
+/* Skip layout and paint work for sections below the viewport on this long page. */
+@supports (content-visibility: auto) {
+    main > section:not(:first-of-type) {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 850px;
+    }
+}
 /* Custom scrollbar to match sleek design */
 ::-webkit-scrollbar {
     width: 8px;

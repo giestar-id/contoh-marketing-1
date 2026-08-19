@@ -286,7 +286,8 @@ export default function Home() {
           alt=""
           fill
           priority
-          sizes="100vw"
+          quality={72}
+          sizes="(max-width: 1280px) 100vw, 1280px"
           className="object-cover"
         />
         
